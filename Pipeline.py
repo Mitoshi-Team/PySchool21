@@ -15,7 +15,7 @@ def translate_to_russian(class_name):
 
 def getImage(image_path):
     image = cv2.imread(image_path)
-    results = model(image_path, imgsz=1280, conf=0.1, agnostic_nms=True)
+    results = model(image_path, imgsz=1280, conf=0.85, agnostic_nms=True)
     class_names = model.names
 
     detected_objects = []  # Список найденных объектов
@@ -31,5 +31,5 @@ def getImage(image_path):
     return detected_objects  # Возвращаем список найденных объектов на русском
 
 # Вызываем функцию и выводим результат
-objects = getImage("images.jpg")
+objects = getImage("image.jpg")
 print("Обнаруженные объекты:", objects)
