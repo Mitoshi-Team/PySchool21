@@ -3,14 +3,12 @@ import numpy as np
 from ultralytics import YOLO
 import io
 from PIL import Image
-from googletrans import Translator
 import piexif
 
 
 class ImageProcessor:
     def __init__(self):
         self.model = YOLO('yolov8x-worldv2.pt')
-        self.translator = Translator()
 
     def detect_objects(self, image_bytes):
         image = Image.open(io.BytesIO(image_bytes))
@@ -68,8 +66,6 @@ class ImageProcessor:
                 class_id = int(box.cls[0])
                 class_name = class_names[class_id]
 
-                translated_class_name = self.translator.translate(class_name, src='en', dest='ru').text
-
                 color = colors[class_id % len(colors)].tolist()
                 cv2.rectangle(annotated_image, (x1, y1), (x2, y2), color, 2)
 
@@ -78,9 +74,9 @@ class ImageProcessor:
                 thickness = 10
 
                 for offset in range(-1, 2):
-                    cv2.putText(annotated_image, translated_class_name, (x1 + offset, y1 - 10 + offset), font, font_scale, color, thickness)
+                    cv2.putText(annotated_image, class_name, (x1 + offset, y1 - 10 + offset), font, font_scale, color, thickness)
 
-                detections["objects"].append(translated_class_name)
+                detections["objects"].append(class_name)
                 
 
         img_byte_arr = io.BytesIO()
