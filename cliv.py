@@ -1,3 +1,4 @@
+# Импорты
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -6,13 +7,12 @@ from deep_translator import GoogleTranslator
 from PIL import Image
 import io
 
-
+# Класс ImageProcessor
 class ImageProcessor:
-    def __init__(self):
+    def __init__(self, text):
         self.model = YOLO('yolov8x-worldv2.pt')
-        # self.model = YOLO('yolov8x.pt')
-
-
+        self.errors_not_found = text
+    
     def translate_to_russian(self, class_name):
         return GoogleTranslator(source='en', target='ru').translate(class_name)
 
@@ -34,6 +34,17 @@ class ImageProcessor:
         class_names_str = ", ".join(detections["objects"])
         print(f"Detected objects: {class_names_str}")
 
+        # Формируем строку из оригинальных и исправленных слов
+        errors_str = ""
+        original = ""
+        corrected = ""
+        for key in self.errors_not_found:
+            original += f"{self.errors_not_found[key]['original']}, "
+            corrected += f"{self.errors_not_found[key]['corrected']}, "
+            errors_str += f"{original} : {corrected}, "
+        errors_str = errors_str.rstrip(", ")  # Убираем последнюю запятую и пробел
+        print(f"Errors not found: {errors_str}")
+
         image = Image.open(io.BytesIO(image_bytes))
 
         original_image = Image.open(io.BytesIO(original_image_bytes))
@@ -46,7 +57,11 @@ class ImageProcessor:
 
         print(f"EXIF before: {overwriting_meta}")
 
+        # Записываем обнаруженные объекты в поле Make
         overwriting_meta["0th"][piexif.ImageIFD.Make] = class_names_str.encode('utf-8')
+        # Записываем errors_not_found в поле Model
+        overwriting_meta["0th"][piexif.ImageIFD.Model] =  original.encode('utf-8')# Переведённые названия
+        overwriting_meta["0th"][piexif.ImageIFD.Software] = corrected.encode('utf-8')  
 
         print(f"EXIF after: {overwriting_meta}")
 
@@ -74,7 +89,7 @@ class ImageProcessor:
 
                 translated_name = self.translate_to_russian(class_name)
 
-                print(class_name + " " +translated_name)
+                print(class_name + " " + translated_name)
 
                 color = colors[class_id % len(colors)].tolist()
                 cv2.rectangle(annotated_image, (x1, y1), (x2, y2), color, 2)
@@ -88,28 +103,15 @@ class ImageProcessor:
 
                 detections["objects"].append(translated_name)
                 
-
         img_byte_arr = io.BytesIO()
         Image.fromarray(annotated_image).save(img_byte_arr, format='JPEG')
 
         annotated_image_bytes = img_byte_arr.getvalue()
 
-        # Добавляем метаданные с информации о классах объектов
+        # Добавляем метаданные с информацией о классах объектов и errors_not_found
         updated_image_bytes = self.add_metadata_to_image(annotated_image_bytes, detections, image_bytes)
         
         return updated_image_bytes
 
-
     def get_image_with_annotations(self, image_bytes, confidence_threshold=0.2):
         return self.process_image(image_bytes, confidence_threshold)
-
-
-# processor = ImageProcessor()
-
-# with open('downloaded_image.jpg', 'rb') as f:
-#     image_bytes = f.read()
-
-# updated_image_bytes = processor.get_image_with_annotations(image_bytes)
-
-# with open('downloaded_image.jpg', 'wb') as f:
-#     f.write(updated_image_bytes)

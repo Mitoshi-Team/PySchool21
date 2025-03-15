@@ -6,7 +6,8 @@ from pyaspeller import YandexSpeller
 import logging
 import re
 
-# Настройка логирования
+text = {}  # Переменная text как словарь для хранения оригинального и исправленного текста
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,6 @@ def download_image_from_gdrive(url):
 
 class TextSpellChecker:
     def __init__(self):
-        # Инициализируем два спеллера: для русского и английского
         try:
             self.speller_ru = YandexSpeller(lang="ru")
             self.speller_en = YandexSpeller(lang="en")
@@ -49,7 +49,7 @@ class TextSpellChecker:
         elif latin and not cyrillic:
             return "en"
         else:
-            return "mixed"  # Смешанный текст
+            return "mixed"  
 
     def check_and_correct(self, text):
         if not isinstance(text, str):
@@ -65,8 +65,7 @@ class TextSpellChecker:
                 corrected_text = self.speller_ru.spelled(text)
             elif lang == "en":
                 corrected_text = self.speller_en.spelled(text)
-            else:  # mixed
-                # Для смешанного текста проверяем по частям
+            else:  
                 words = text.split()
                 corrected_words = []
                 for word in words:
@@ -76,7 +75,7 @@ class TextSpellChecker:
                     elif word_lang == "en":
                         corrected_words.append(self.speller_en.spelled(word))
                     else:
-                        corrected_words.append(word)  # Оставляем как есть, если не определён язык
+                        corrected_words.append(word) 
                 corrected_text = " ".join(corrected_words)
 
             logger.info(f"Текст проверен ({lang}). Оригинал: '{text}', Исправлено: '{corrected_text}'")
@@ -123,16 +122,21 @@ def process_image_text(google_drive_url):
         
         # Обработка распознанного текста
         print("\nРаспознанный текст и его исправление:")
-        for detection in result:
+        for i, detection in enumerate(result):
             original_text = detection[1]
             detected_lang = spell_checker.detect_language(original_text)
             corrected_text = spell_checker.check_and_correct(original_text)
+            
+            # Запись в переменную text
+            text[f"text_{i}"] = {
+                "original": original_text,
+                "corrected": corrected_text
+            }
             
             print(f"\nОпределённый язык: {detected_lang}")
             print(f"Оригинальный текст: {original_text}")
             print(f"Исправленный текст: {corrected_text}")
             
-            # Проверка ошибок
             errors = spell_checker.get_errors(original_text)
             if errors:
                 print("Найденные ошибки:")
@@ -140,14 +144,15 @@ def process_image_text(google_drive_url):
                     print(f"Слово: '{error['word']}', Варианты: {error['s']}")
             else:
                 print("Ошибок не найдено.")
+
+        return text
                 
     except Exception as e:
         logger.error(f"Ошибка в процессе обработки: {e}")
         print(f"Произошла ошибка: {e}")
 
 if __name__ == "__main__":
-    # Прямая ссылка на Google Drive
     google_drive_url = "https://drive.google.com/file/d/1osQl41JRHcphGVk7DeRw5yDq1sFQ1b_J/view?usp=sharing"
-    
-    # Запуск обработки
-    process_image_text(google_drive_url)
+    processed_text = process_image_text(google_drive_url)
+    print("\nСодержимое переменной text:")
+    print(processed_text)
