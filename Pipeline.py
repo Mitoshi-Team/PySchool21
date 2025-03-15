@@ -2,9 +2,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import piexif
-# from deep_translator import GoogleTranslator
 from deep_translator import GoogleTranslator
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import io
 
 
