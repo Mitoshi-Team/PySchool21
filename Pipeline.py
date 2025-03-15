@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
-
+#ddf
 def detect_objects(image_path):
     # Load YOLO model
     model = YOLO('yoloWorld.pt')
