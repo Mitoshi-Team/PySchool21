@@ -1,14 +1,19 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
-import io
-from PIL import Image
 import piexif
+# from deep_translator import GoogleTranslator
+from deep_translator import GoogleTranslator
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 
 class ImageProcessor:
     def __init__(self):
         self.model = YOLO('yolov8x-worldv2.pt')
+
+    def translate_to_russian(self, class_name):
+        return GoogleTranslator(source='en', target='ru').translate(class_name)
 
     def detect_objects(self, image_bytes):
         image = Image.open(io.BytesIO(image_bytes))
@@ -66,6 +71,10 @@ class ImageProcessor:
                 class_id = int(box.cls[0])
                 class_name = class_names[class_id]
 
+                translated_name = self.translate_to_russian(class_name)
+
+                print(class_name + " " +translated_name)
+
                 color = colors[class_id % len(colors)].tolist()
                 cv2.rectangle(annotated_image, (x1, y1), (x2, y2), color, 2)
 
@@ -76,7 +85,7 @@ class ImageProcessor:
                 for offset in range(-1, 2):
                     cv2.putText(annotated_image, class_name, (x1 + offset, y1 - 10 + offset), font, font_scale, color, thickness)
 
-                detections["objects"].append(class_name)
+                detections["objects"].append(translated_name)
                 
 
         img_byte_arr = io.BytesIO()
@@ -88,6 +97,7 @@ class ImageProcessor:
         updated_image_bytes = self.add_metadata_to_image(annotated_image_bytes, detections, image_bytes)
         
         return updated_image_bytes
+
 
     def get_image_with_annotations(self, image_bytes, confidence_threshold=0.2):
         return self.process_image(image_bytes, confidence_threshold)
